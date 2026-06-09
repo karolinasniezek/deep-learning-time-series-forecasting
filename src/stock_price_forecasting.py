@@ -9,6 +9,8 @@ from sklearn.preprocessing import  MinMaxScaler
 from tensorflow.keras.layers import LSTM, GRU, Dense, Dropout, BatchNormalization
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
 
 keras.utils.set_random_seed(43)
 tf.config.experimental.enable_op_determinism()
@@ -48,8 +50,8 @@ model_lstm = Sequential([
 ])
 
 model_lstm.compile(optimizer=Adam(learning_rate=0.001), loss='mse')
-model_lstm.fit(X_train, y_train, epochs=10, batch_size=32)
-model_lstm.save("model_lstm.h5")
+# model_lstm.fit(X_train, y_train, epochs=10, batch_size=32)
+# model_lstm.save("model_lstm.h5")
 
 model_gru = Sequential([
     GRU(64, return_sequences=True, input_shape=(seq_length, 1)),
@@ -61,5 +63,25 @@ model_gru = Sequential([
 ])
 
 model_gru.compile(optimizer=Adam(learning_rate=0.001), loss="mse")
-model_gru.fit(X_train, y_train, epochs=10, batch_size=32)
-model_lstm.save("model_gru.h5")
+# model_gru.fit(X_train, y_train, epochs=10, batch_size=32)
+# model_gru.save("model_gru.h5")
+
+model_lstm = tf.keras.models.load_model("model_lstm.h5")
+model_gru = tf.keras.models.load_model("model_gru.h5")
+
+pred_lstm = scaler.inverse_transform(model_lstm.predict(X_test))
+pred_gru = scaler.inverse_transform(model_gru.predict(X_test))
+y_test_inv = scaler.inverse_transform(y_test)
+
+rmse_lstm = np.sqrt(mean_squared_error(y_test_inv, pred_lstm))
+rmse_gru = np.sqrt(mean_squared_error(y_test_inv, pred_gru))
+
+print("MRSE LSTM", rmse_lstm)
+print("MRSE GRU", rmse_gru)
+
+plt.plot(y_test_inv, label="Real")
+plt.plot(pred_lstm, label="LSTM")
+plt.plot(pred_gru, label="GRU")
+plt.legend()
+plt.title("Model comparission: LSTM vs GRU")
+plt.savefig("../figures/compare-models-LSTM-GRU.png")
